@@ -66,7 +66,6 @@ Image.prototype.uploadVersions = function uploadVersions(results, cb) {
 
     results.versions.push(org);
   }
-
   map(results.versions, this._upload.bind(this, results.dest), cb);
 };
 
@@ -89,8 +88,22 @@ Image.prototype._upload = function _upload(dest, version, cb) {
 
   const format = extname(version.path).substr(1).toLowerCase();
 
+  // enhance 'key' with prefix
+  const assignFilename = !(/\/$/.test(dest));
+  let name = "";
+  if (assignFilename) {
+    name = dest.replace(/.*\//, "");
+    const nameRule = new RegExp(name + "$");
+    dest = dest.replace(nameRule, "");
+    name = (version.prefix || "") + (name || "") + (version.suffix || "") + "." + format;
+  } else {
+    name = version.path.replace(/.*\//, "");
+  }
+  const key = dest + name;
+
   const options = {
-    Key: `${dest}${version.suffix || ''}.${format}`,
+    // Key: `${dest}${version.suffix || ''}.${format}`,
+    Key: key,
     ACL: version.awsImageAcl,
     Body: fs.createReadStream(version.path),
     ContentType: `image/${format === 'jpg' ? 'jpeg' : format}`,
